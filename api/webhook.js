@@ -1,25 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
-
-const WEBHOOK_SECRET = process.env.LEMON_WEBHOOK_SECRET;
-
-function verificarFirma(payload, signature) {
-  const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET);
-  const digest = hmac.update(payload).digest('hex');
-  try {
-    return crypto.timingSafeEqual(
-      Buffer.from(digest),
-      Buffer.from(signature)
-    );
-  } catch {
-    return false;
-  }
-}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -30,13 +14,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const signature = req.headers['x-signature'];
-    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-
-    if (!signature || !verificarFirma(rawBody, signature)) {
-      return res.status(401).json({ error: 'Firma invalida' });
-    }
-
     const eventName = req.headers['x-event-name'];
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
